@@ -6,9 +6,14 @@ import { isEqual } from "lodash";
 
 config();
 
-export let database: Mongoose.Connection;
+let database: Mongoose.Connection;
 
-export async function connect() {
+/**
+ * Connect to the database.
+ * Should only be used in this file
+ * @returns Nothing
+ */
+async function connect() {
   if (database) return;
   if (!process.env.MONGODB_URI) return;
 
@@ -17,7 +22,11 @@ export async function connect() {
   database = Mongoose.connection;
 }
 
-function getLastCategory(categories: any[]) {
+/**
+ * Get an index wich is not already used.
+ * @returns Index
+ */
+function getFreeIndex(categories: Category[]) {
   function sortIds(a: number, b: number) {
     return b - a;
   }
@@ -35,62 +44,87 @@ function getLastCategory(categories: any[]) {
   return sortedIds[0] + 1;
 }
 
+/**
+ * Get a specific category.
+ * @param name Lower cased string
+ * @returns Category
+ */
 export async function getCategory(name: string): Promise<Category> {
+  // Quick verification to convert the name to lower case
   name = name.toLowerCase();
 
   await connect();
 
   const categories = database.collection("categories");
 
-  const allCategories = await categories.find({}).toArray();
+  /**It's a list of Category */
+  const allCategories: any = await categories.find({}).toArray();
 
-  let gamesCategory: any = await categories.findOne({
+  /**It's a Category */
+  const gamesCategory: any = await categories.findOne({
     category: name,
   });
 
-  if (gamesCategory == null) {
-    const category = {
-      category: name,
-      id: getLastCategory(allCategories),
-    };
-    categories.insertOne(category);
+  // If the category exist, returns it
+  if (gamesCategory != null) return gamesCategory;
 
-    gamesCategory = category;
-  }
+  // Else create the category and returns it
+  const category: Category = {
+    category: name,
+    id: getFreeIndex(allCategories),
+  };
 
-  return gamesCategory;
+  await categories.insertOne(category);
+
+  return category;
 }
 
-export async function insertMany(items: Answer[]) {
-  await connect();
-
+/**
+ * Insert an answer in the database without duplicates.<br>
+ * The function update the answer if it already exist in the databse.
+ * @returns Nothing
+ */
+export async function insertOne(answer: Answer) {
   const images = database.collection("images");
 
-  for (const answer of items) {
-    const item = await images.findOne({
-      answer: answer.answer,
-    });
+  const item = await images.findOne({
+    answer: answer.answer,
+  });
 
-    if (item == null) {
-      await images.insertOne(answer);
-      continue;
-    }
-
-    delete item._id;
-
-    if (isEqual(item, answer)) {
-      console.log(answer.answer + " Deja dans la base de donnée !");
-      continue;
-    } else {  
-      await images.findOneAndReplace(
-        {
-          answer: answer.answer,
-        },
-        answer
-      );
-      console.log(answer.answer + " Remplacé par de nouvelles valeurs !");
-    }
+  // If item doesn't exist add it
+  if (item == null) {
+    await images.insertOne(answer);
+    return;
   }
+
+  // Delete the _id on the item for comparaison with answer
+  delete item._id;
+
+  // Is they're the same, return
+  if (isEqual(item, answer)) {
+    console.log(answer.answer + " Deja dans la base de donnée !");
+    return;
+  }
+
+  // Is they're not the same, update the one in the database with the new one
+  await images.findOneAndReplace(
+    {
+      answer: answer.answer,
+    },
+    answer
+  );
+  console.log(answer.answer + " Remplacé par de nouvelles valeurs !");
 }
 
-// addGamesToMongo();
+/**
+ * Insert an array of answer in the database without duplicates.<br>
+ * The function update the answer if it already exist in the databse.
+ * @returns Nothing
+ */
+export async function insertMany(answers: Answer[]) {
+  await connect();
+
+  for (const answer of answers) {
+    await insertOne(answer);
+  }
+}
