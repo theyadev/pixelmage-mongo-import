@@ -99,21 +99,21 @@ export async function insertOne(answer: Answer) {
 
   // Delete the _id on the item for comparaison with answer
   delete item._id;
+  
+  delete item.url
+
+  let answerSansUrl: any = answer
+
+  delete answerSansUrl.url
 
   // Is they're the same, return
-  if (isEqual(item, answer)) {
+  if (isEqual(item, answerSansUrl)) {
     console.log(answer.answer + " Deja dans la base de donnée !");
     return;
+  } else {
+    // Else insert
+    images.insertOne(answer);
   }
-
-  // Is they're not the same, update the one in the database with the new one
-  await images.findOneAndReplace(
-    {
-      answer: answer.answer,
-    },
-    answer
-  );
-  console.log(answer.answer + " Remplacé par de nouvelles valeurs !");
 }
 
 /**
@@ -128,3 +128,25 @@ export async function insertMany(answers: Answer[]) {
     await insertOne(answer);
   }
 }
+
+/**
+ * Truncate images
+ * @returns Nothing
+ */
+async function removeCategoryAndImages(categoryName: string) {
+  const category = await getCategory(categoryName);
+
+  const images = database.collection("images");
+
+  const imagesList = await images
+    .find({
+      categoryId: category.id,
+    })
+    .toArray();
+
+  for (const image of imagesList) {
+    await images.findOneAndDelete(image);
+  }
+}
+
+removeCategoryAndImages("chanteurs")
