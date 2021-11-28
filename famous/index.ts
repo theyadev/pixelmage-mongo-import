@@ -4,6 +4,9 @@ import { getCategory, insertMany } from "..";
 
 import { Answer } from "../types";
 
+/**
+ * @returns Number of pages
+ */
 async function getNbOfPages(page: Page) {
   return await page.evaluate(() => {
     const pagesDiv = document.querySelectorAll(".page-item");
@@ -13,6 +16,9 @@ async function getNbOfPages(page: Page) {
   });
 }
 
+/**
+ * Scrap every page from a "anniversaire-celebrite.com" link
+ */
 async function startScrapping(link: string, categoryName: string) {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
@@ -34,31 +40,34 @@ async function startScrapping(link: string, categoryName: string) {
       for (const card of cards) {
         const answer = card.querySelector(".celnom > a")?.innerHTML.trim();
         const url = card.querySelector(".celimage")?.querySelector("img")?.src;
-        const aliases = null;
-        const categoryId = category.id
 
-        if(!answer || !url) continue
+        if (!answer || !url) continue;
 
         answerList.push({
-            answer,
-            url,
-            aliases,
-            categoryId
-        })
+          answer,
+          url,
+          aliases: null,
+          categoryId: category.id,
+        });
       }
 
-      return answerList
+      return answerList;
     }, category);
 
-    await insertMany(result)
-    console.log(`Page ${i}/${nbPages}`);
+    await insertMany(result);
+    console.log(`Page ${i}/${nbPages} | ${categoryName}`);
   }
 }
 
-const chanteurs = "https://anniversaire-celebrite.com/categories/chanteurs";
-const animateurs = "https://anniversaire-celebrite.com/categories/animateurs";
-const personnagesFiction = "https://anniversaire-celebrite.com/categories/personnages-de-fiction"
+async function main() {
+  const chanteurs = "https://anniversaire-celebrite.com/categories/chanteurs";
+  const animateurs = "https://anniversaire-celebrite.com/categories/animateurs";
+  const personnagesFiction =
+    "https://anniversaire-celebrite.com/categories/personnages-de-fiction";
 
-startScrapping(animateurs, "animateurs");
-// startScrapping(chanteurs, "chanteurs");
-startScrapping(personnagesFiction, "personnages de fiction")
+  await startScrapping(animateurs, "animateurs");
+  await startScrapping(chanteurs, "chanteurs");
+  await startScrapping(personnagesFiction, "personnages de fiction");
+}
+
+main()
