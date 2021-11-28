@@ -51,7 +51,7 @@ async function fetchAnimes(pages: number) {
  * @returns Answer
  */
 function animeToAnswer(anime: Media, category: Category) {
-  const aliases = [];
+  const aliases: string[] = [];
 
   aliases.push(anime.title.english);
 
