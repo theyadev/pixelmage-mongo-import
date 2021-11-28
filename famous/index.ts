@@ -62,14 +62,24 @@ async function startScrapping(link: string, categoryName: string) {
 }
 
 async function main() {
-  const chanteurs = "https://anniversaire-celebrite.com/categories/chanteurs";
-  const animateurs = "https://anniversaire-celebrite.com/categories/animateurs";
-  const personnagesFiction =
-    "https://anniversaire-celebrite.com/categories/personnages-de-fiction";
+  const categories = [
+    {
+      url: "https://anniversaire-celebrite.com/categories/chanteurs",
+      name: "chanteurs",
+    },
+    {
+      url: "https://anniversaire-celebrite.com/categories/animateurs",
+      name: "animateurs",
+    },
+    {
+      url: "https://anniversaire-celebrite.com/categories/personnages-de-fiction",
+      name: "personnages de fiction",
+    },
+  ];
 
-  await startScrapping(animateurs, "animateurs");
-  await startScrapping(chanteurs, "chanteurs");
-  await startScrapping(personnagesFiction, "personnages de fiction");
+  for (const category of categories) {
+    await startScrapping(category.url, category.name);
+  }
 }
 
-main()
+main();
