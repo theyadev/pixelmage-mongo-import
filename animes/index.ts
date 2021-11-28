@@ -53,7 +53,7 @@ async function fetchAnimes(pages: number) {
 function animeToAnswer(anime: Media, category: Category) {
   const aliases = [];
 
-  aliases.push(anime.title.english);
+  if (anime.title.english != null) aliases.push(anime.title.english);
 
   for (const synonym of anime.synonyms) {
     if (synonym.length > 2) {
