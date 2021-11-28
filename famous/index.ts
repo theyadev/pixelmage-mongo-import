@@ -1,3 +1,5 @@
+// Made by fmaret (https://github.com/fmaret) and formatted/optimized by Me (Theya)
+
 import puppeteer, { Page } from "puppeteer";
 
 import { getCategory, insertMany } from "..";
