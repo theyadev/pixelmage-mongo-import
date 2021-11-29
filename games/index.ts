@@ -1,13 +1,10 @@
 import axios from "axios";
 
 import { extend } from "lodash";
-import { readFileSync, writeFileSync } from "fs";
 
 import { Games, Game, Answer, Category } from "../types";
 
 import { getCategory, insertMany } from "../";
-
-const jsonPath = "../games.json";
 
 /**
  * Get the url of the image based on a steam id.
@@ -15,20 +12,6 @@ const jsonPath = "../games.json";
  */
 function getImageUrl(id: number) {
   return `https://cdn.akamai.steamstatic.com/steam/apps/${id}/header.jpg`;
-}
-
-/**
- * Read games from json.
- * @returns Game List
- */
-function readJSON() {
-  const buffer = readFileSync(jsonPath, {
-    encoding: "utf-8",
-  });
-
-  const games: Game[] = JSON.parse(buffer);
-
-  return games;
 }
 
 /**
@@ -63,7 +46,7 @@ async function fetchFromAPI(pages: number = 49) {
 }
 
 /**
- * Fetch games from API and write them to the json.
+ * Fetch games from API and convert them to a sorted Array
  * @returns A list of games sorted by positive
  */
 async function getGames() {
@@ -75,36 +58,7 @@ async function getGames() {
     return b.positive - a.positive;
   });
 
-  writeFileSync(jsonPath, JSON.stringify(sortedGames), {
-    encoding: "utf-8",
-  });
-
   return sortedGames;
-}
-
-/**
- * Fetch games from JSON or API if no json.
- * @returns Array of Game
- */
-async function fetchGames() {
-  let games: Game[];
-
-  try {
-    console.log("Fetching games from JSON !");
-
-    games = readJSON();
-
-    console.log("Finished");
-  } catch (error) {
-    console.log("Error while fetching the JSON.");
-    console.log("Fetching games from steamspy !");
-
-    games = await getGames();
-
-    console.log("Finished");
-  }
-
-  return games
 }
 
 /**
@@ -126,7 +80,7 @@ function gameToAnswer(game: Game, category: Category) {
  * @returns Nothing
  */
 async function addGamesToMongo() {
-  const games = await fetchGames()
+  const games = await getGames();
 
   const category = await getCategory("jeux");
 
