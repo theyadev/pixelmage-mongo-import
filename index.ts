@@ -149,4 +149,4 @@ async function removeCategoryAndImages(categoryName: string) {
   }
 }
 
-removeCategoryAndImages("chanteurs")
+// removeCategoryAndImages("chanteurs")
