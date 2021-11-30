@@ -1,5 +1,6 @@
 import Mongoose from "mongoose";
 import { Category, Answer } from "./types";
+import { performance } from "perf_hooks";
 
 import { config } from "dotenv";
 import { isEqual } from "lodash";
@@ -99,12 +100,12 @@ export async function insertOne(answer: Answer) {
 
   // Delete the _id on the item for comparaison with answer
   delete item._id;
-  
-  delete item.url
 
-  let answerSansUrl: any = answer
+  delete item.url;
 
-  delete answerSansUrl.url
+  let answerSansUrl: any = answer;
+
+  delete answerSansUrl.url;
 
   // Is they're the same, return
   if (isEqual(item, answerSansUrl)) {
@@ -150,3 +151,79 @@ async function removeCategoryAndImages(categoryName: string) {
 }
 
 // removeCategoryAndImages("chanteurs")
+
+async function test() {
+  await connect();
+
+  const imagesCollection = database.collection("images");
+  const categoryCollection = database.collection("categories");
+
+  const images = (await imagesCollection.find({}).toArray()) as Answer[];
+
+  const randomImages = images.sort(randomSort);
+
+  function randomSort() {
+    return Math.random() - 0.5;
+  }
+
+  const categoriesRes = (await categoryCollection
+    .find({})
+    .toArray()) as Category[];
+  const randomCategories = categoriesRes.sort(randomSort);
+
+  const categories = randomCategories
+
+  const rounds = 8;
+
+  const nbs = []
+  const algo1 = []
+  const algo2 = []
+
+  for (let y = 0; y < 9000; y++) {
+    const start = performance.now()
+
+    let numbers = categories.map((e) => {
+      return Math.floor(rounds / categories.length);
+    });
+
+    for (let i=0;i<rounds%categories.length;i++){
+      numbers[i]+=1 
+    }
+
+    const end = performance.now()
+
+    nbs.push(end - start)
+
+    const start1 = performance.now()
+    let allImages1: Answer[] = []
+
+    const randomImagesList = categories.map(e=>{
+      return randomImages.filter(image => image.categoryId == e.id)
+    }) 
+    
+    for (let i=0;i<numbers.length;i++){
+      allImages1 = allImages1.concat(randomImagesList[i].splice(0,numbers[i]))
+    }
+
+    const end1 = performance.now()
+    algo1.push(end1 - start1)
+
+    const start2 = performance.now()
+
+    let allImages2: Answer[] = []
+    for (let i=0;i<numbers.length;i++){
+      allImages2 = allImages2.concat(randomImages.filter(image=> image.categoryId == categories[i].id).splice(0,numbers[i]))
+    }
+
+    const end2 = performance.now()
+    algo2.push(end2 - start2)
+  }
+
+  const average = (array: any[]) => array.reduce((a, b) => a + b) / array.length;
+
+  console.log("Moyenne algo nombres: " + average(nbs));
+  console.log("Moyenne algo 1: " + average(algo1));
+  console.log("Moyenne algo 2: " + average(algo2));
+}
+
+test();
